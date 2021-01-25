@@ -93,7 +93,7 @@ def margin_loss(y_true, y_pred):
 
 
 def train(model,  # type: models.Model
-          data, args):
+          train_generator, val_generator, args):
     """
     Training a CapsuleNet
     :param model: the CapsuleNet model
@@ -123,19 +123,25 @@ def train(model,  # type: models.Model
     """
 
     # Begin: Training with data augmentation ---------------------------------------------------------------------#
-    def train_generator(x, y, batch_size, shift_fraction=0.):
-        train_datagen = ImageDataGenerator(width_shift_range=shift_fraction,
-                                           height_shift_range=shift_fraction)  # shift up to 2 pixel for MNIST
-        generator = train_datagen.flow(x, y, batch_size=batch_size)
-        while 1:
-            x_batch, y_batch = generator.next()
-            yield (x_batch, y_batch), (y_batch, x_batch)
+    # def train_generator(x, y, batch_size, shift_fraction=0.):
+    #     train_datagen = ImageDataGenerator(width_shift_range=shift_fraction,
+    #                                        height_shift_range=shift_fraction)  # shift up to 2 pixel for MNIST
+    #     generator = train_datagen.flow(x, y, batch_size=batch_size)
+    #     while 1:
+    #         x_batch, y_batch = generator.next()
+    #         yield (x_batch, y_batch), (y_batch, x_batch)
 
     # Training with data augmentation. If shift_fraction=0., no augmentation.
-    model.fit(train_generator(x_train, y_train, args.batch_size, args.shift_fraction),
-              steps_per_epoch=int(y_train.shape[0] / args.batch_size),
+    # model.fit(train_generator(x_train, y_train, args.batch_size, args.shift_fraction),
+    #           steps_per_epoch=int(y_train.shape[0] / args.batch_size),
+    #           epochs=args.epochs,
+    #           validation_data=((x_test, y_test), (y_test, x_test)), batch_size=args.batch_size,
+    #           callbacks=[log, checkpoint, lr_decay])
+
+    model.fit(train_generator,
+              steps_per_epoch=int(64 / args.batch_size),
               epochs=args.epochs,
-              validation_data=((x_test, y_test), (y_test, x_test)), batch_size=args.batch_size,
+              validation_data=val_generator, batch_size=args.batch_size,
               callbacks=[log, checkpoint, lr_decay])
     # End: Training with data augmentation -----------------------------------------------------------------------#
 
@@ -201,6 +207,56 @@ def load_mnist():
     return (x_train, y_train), (x_test, y_test)
 
 
+def load_data(args):
+    datagen_kwargs = dict(rescale=1./255, validation_split=args.validation_split)
+    
+    datagen = tf.keras.preprocessing.image.ImageDataGenerator(**datagen_kwargs)
+    
+    generator_args = dict()
+    if(args.image_size!=0):
+        generator_args["target_size"] = (args.image_size,args.image_size)
+    if(args.grayscale):
+        generator_args["color_mode"] = 'grayscale'
+        
+
+    val_generator = datagen.flow_from_directory(
+        #args.directory_validation,
+        args.directory,
+        batch_size=args.batch_size,
+        subset='validation',
+        **generator_args)
+
+    
+    train_datagen_args = datagen_kwargs.copy()
+
+    if (args.rotation_range!=0):
+        train_datagen_args["rotation_range"]=args.rotation_range
+    if(args.horizontal_flip):
+        train_datagen_args["horizontal_flip"] = True
+    if(args.width_shift_range!=0.0):
+        train_datagen_args["width_shift_range"] = args.width_shift_range
+    if(args.height_shift_range!=0.0):
+        train_datagen_args["height_shift_range"] = args.height_shift_range
+    if(args.shear_range!=0.0):
+        train_datagen_args["shear_range"]=args.shear_range
+    if(args.zoom_range!=0.0):
+        train_datagen_args["zoom_range"]=args.zoom_range
+    if(args.channel_shift_range!=0.0):
+        train_datagen_args["channel_shift_range"]=args.channel_shift_range
+    if(args.brightness_range!=0.0):
+        train_datagen_args["brightness_range"] = [args.brightness_range*-1, args.brightness_range]
+
+
+    train_datagen = tf.keras.preprocessing.image.ImageDataGenerator(
+		**datagen_kwargs)
+
+    train_generator = train_datagen.flow_from_directory(
+		args.directory, subset="training", shuffle=True,
+		batch_size=args.batch_size,
+        **generator_args)
+
+    return train_generator, val_generator
+
 if __name__ == "__main__":
     import os
     import argparse
@@ -230,6 +286,7 @@ if __name__ == "__main__":
                         help="Digit to manipulate")
     parser.add_argument('-w', '--weights', default=None,
                         help="The path of the saved weights. Should be specified when testing")
+    parser.add_argument('-d', '--directory', default='images', help="Directory where the training data is stored. Error if not assigned.")
     args = parser.parse_args()
     print(args)
 
@@ -237,11 +294,12 @@ if __name__ == "__main__":
         os.makedirs(args.save_dir)
 
     # load data
-    (x_train, y_train), (x_test, y_test) = load_mnist()
+    #(x_train, y_train), (x_test, y_test) = load_mnist()
+    train_generator, val_generator = load_data(args)
 
     # define model
-    model, eval_model, manipulate_model = CapsNet(input_shape=x_train.shape[1:],
-                                                  n_class=len(np.unique(np.argmax(y_train, 1))),
+    model, eval_model, manipulate_model = CapsNet(input_shape=(64,64),
+                                                  n_class=9,
                                                   routings=args.routings,
                                                   batch_size=args.batch_size)
     model.summary()
@@ -250,7 +308,7 @@ if __name__ == "__main__":
     if args.weights is not None:  # init the model weights with provided one
         model.load_weights(args.weights)
     if not args.testing:
-        train(model=model, data=((x_train, y_train), (x_test, y_test)), args=args)
+        train(model=model, train_generator=train_generator, val_generator=val_generator, args=args)
     else:  # as long as weights are given, will run testing
         if args.weights is None:
             print('No weights are provided. Will test using random initialized weights.')
