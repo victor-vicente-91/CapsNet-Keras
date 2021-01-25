@@ -287,6 +287,7 @@ if __name__ == "__main__":
     parser.add_argument('-w', '--weights', default=None,
                         help="The path of the saved weights. Should be specified when testing")
     parser.add_argument('-d', '--directory', default='images', help="Directory where the training data is stored. Error if not assigned.")
+    parser.add_argument('-vs', '--validation_split', default=0.2, type=float, help="Fraction of images reserved for validation (strictly between 0 and 1).")    
     args = parser.parse_args()
     print(args)
 
