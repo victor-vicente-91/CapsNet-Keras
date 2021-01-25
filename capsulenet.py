@@ -213,10 +213,10 @@ def load_data(args):
     datagen = tf.keras.preprocessing.image.ImageDataGenerator(**datagen_kwargs)
     
     generator_args = dict()
-    if(args.image_size!=0):
-        generator_args["target_size"] = (args.image_size,args.image_size)
-    if(args.grayscale):
-        generator_args["color_mode"] = 'grayscale'
+    #if(args.image_size!=0):
+    generator_args["target_size"] = (args.image_size,args.image_size)
+    #if(args.grayscale):
+    generator_args["color_mode"] = 'grayscale'
         
 
     val_generator = datagen.flow_from_directory(
@@ -229,8 +229,8 @@ def load_data(args):
     
     train_datagen_args = datagen_kwargs.copy()
 
-    if (args.rotation_range!=0):
-        train_datagen_args["rotation_range"]=args.rotation_range
+    #if (args.rotation_range!=0):
+    train_datagen_args["rotation_range"]=args.rotation_range
     if(args.horizontal_flip):
         train_datagen_args["horizontal_flip"] = True
     if(args.width_shift_range!=0.0):
