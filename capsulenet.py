@@ -310,8 +310,7 @@ if __name__ == "__main__":
     train_generator, val_generator = load_data(args)
 
     # define model
-    model, eval_model, manipulate_model = CapsNet(input_shape=(64,64),
-                                                  n_class=9,
+    model, eval_model, manipulate_model = CapsNet(input_shape=(64,64), n_class=9,
                                                   routings=args.routings,
                                                   batch_size=args.batch_size)
     model.summary()
