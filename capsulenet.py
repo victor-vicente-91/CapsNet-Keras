@@ -102,7 +102,7 @@ def train(model,  # type: models.Model
     :return: The trained model
     """
     # unpacking the data
-    (x_train, y_train), (x_test, y_test) = data
+    #(x_train, y_train), (x_test, y_test) = data
 
     # callbacks
     log = callbacks.CSVLogger(args.save_dir + '/log.csv')
@@ -213,10 +213,10 @@ def load_data(args):
     datagen = tf.keras.preprocessing.image.ImageDataGenerator(**datagen_kwargs)
     
     generator_args = dict()
-    #if(args.image_size!=0):
-    generator_args["target_size"] = (args.image_size,args.image_size)
-    #if(args.grayscale):
-    generator_args["color_mode"] = 'grayscale'
+    if(args.image_size!=0):
+        generator_args["target_size"] = (args.image_size,args.image_size)
+    if(args.grayscale):
+        generator_args["color_mode"] = 'grayscale'
         
 
     val_generator = datagen.flow_from_directory(
@@ -229,8 +229,8 @@ def load_data(args):
     
     train_datagen_args = datagen_kwargs.copy()
 
-    #if (args.rotation_range!=0):
-    train_datagen_args["rotation_range"]=args.rotation_range
+    if (args.rotation_range!=0):
+        train_datagen_args["rotation_range"]=args.rotation_range
     if(args.horizontal_flip):
         train_datagen_args["horizontal_flip"] = True
     if(args.width_shift_range!=0.0):
@@ -289,6 +289,16 @@ if __name__ == "__main__":
     parser.add_argument('-d', '--directory', default='images', help="Directory where the training data is stored. Error if not assigned.")
     parser.add_argument('-vs', '--validation_split', default=0.2, type=float, help="Fraction of images reserved for validation (strictly between 0 and 1).")    
     parser.add_argument('--image_size', default=0, type=int, help="Size for images which should be used by model (image_size x image_size).")
+
+    parser.add_argument('--grayscale', default=True, help="Changes Network from grayscale mode to RGB mode.")
+    parser.add_argument('--rotation_range', default=0, type=int, help="Rotation range for data augmentation.")
+    parser.add_argument('--horizontal_flip', default=False, help="Enables horizontal flip for data augmentation.")
+    parser.add_argument('--width_shift_range', default=0.0, type=float, help="Widht shift range for data augmentation. Should be within -1.0 to +1.0.")
+    parser.add_argument('--height_shift_range', default=0.0, type=float, help="Height shift range for data augmentation. Should be within -1.0 to +1.0.")
+    parser.add_argument('--shear_range', default=0.0, type=float, help="Shear range for data augmentation.")
+    parser.add_argument('--zoom_range', default=0.0, type=float, help="Zoom range for data augmentation.")
+    parser.add_argument('--channel_shift_range', default=0.0, type=float, help="Channel shift range for data augmentation.")
+    parser.add_argument('--brightness_range', default=0.0, type=float, help="Brightness range for data augmentation.")
     args = parser.parse_args()
     print(args)
 
