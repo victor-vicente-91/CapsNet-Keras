@@ -141,7 +141,7 @@ def train(model,  # type: models.Model
     model.fit(train_generator,
               steps_per_epoch=int(64 / args.batch_size),
               epochs=args.epochs,
-              validation_data=val_generator, batch_size=args.batch_size)
+              validation_data=val_generator)#, batch_size=args.batch_size)
               #callbacks=[log, checkpoint, lr_decay])
     # End: Training with data augmentation -----------------------------------------------------------------------#
 
